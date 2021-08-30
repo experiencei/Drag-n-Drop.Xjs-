@@ -47,22 +47,31 @@ function updateSavedColumns() {
   });
 }
 
+// Filter Array to remove empty values
+function filterArray(array) {
+  const filteredArray = array.filter(item => item !== null);
+  return filteredArray;
+}
+
 // Create DOM Elements for each list item
 function createItemEl(columnEl, column, item, index) {
-  
   // List Item
   const listEl = document.createElement('li');
   listEl.textContent = item;
-  listEl.classList.add('drag-item');
   listEl.id = index;
+  listEl.classList.add('drag-item');
+  listEl.draggable = true;
+  listEl.setAttribute('onfocusout', `updateItem(${index}, ${column})`);
+  listEl.setAttribute('ondragstart', 'drag(event)');
+  listEl.contentEditable = true;
   // Append
   columnEl.appendChild(listEl);
 }
 
 // Update Columns in DOM - Reset HTML, Filter Array, Update localStorage
 function updateDOM() {
-   // Check localStorage once
-   if (!updatedOnLoad) {
+  // Check localStorage once
+  if (!updatedOnLoad) {
     getSavedColumns();
   }
   // Backlog Column
@@ -70,28 +79,42 @@ function updateDOM() {
   backlogListArray.forEach((backlogItem, index) => {
     createItemEl(backlogListEl, 0, backlogItem, index);
   });
-  
+  backlogListArray = filterArray(backlogListArray);
   // Progress Column
   progressListEl.textContent = '';
   progressListArray.forEach((progressItem, index) => {
     createItemEl(progressListEl, 1, progressItem, index);
   });
-  
+  progressListArray = filterArray(progressListArray);
   // Complete Column
   completeListEl.textContent = '';
   completeListArray.forEach((completeItem, index) => {
     createItemEl(completeListEl, 2, completeItem, index);
   });
-
+  completeListArray = filterArray(completeListArray);
   // On Hold Column
   onHoldListEl.textContent = '';
   onHoldListArray.forEach((onHoldItem, index) => {
     createItemEl(onHoldListEl, 3, onHoldItem, index);
   });
+  onHoldListArray = filterArray(onHoldListArray);
+  // Don't run more than once, Update Local Storage
+  updatedOnLoad = true;
+  updateSavedColumns();
+}
 
-// Don't run more than once, Update Local Storage
-updatedOnLoad = true;
-updateSavedColumns();
+// Update Item - Delete if necessary, or update Array value
+function updateItem(id, column) {
+  const selectedArray = listArrays[column];
+  const selectedColumn = listColumns[column].children;
+  if (!dragging) {
+    if (!selectedColumn[id].textContent) {
+      delete selectedArray[id];
+    } else {
+      selectedArray[id] = selectedColumn[id].textContent;
+    }
+    updateDOM();
+  }
 }
 
 // Add to Column List, Reset Textbox
@@ -109,7 +132,7 @@ function showInputBox(column) {
   saveItemBtns[column].style.display = 'flex';
   addItemContainers[column].style.display = 'flex';
 }
-n 
+
 // Hide Item Input Box
 function hideInputBox(column) {
   addBtns[column].style.visibility = 'visible';
@@ -138,6 +161,7 @@ function rebuildArrays() {
   }
   updateDOM();
 }
+
 // When Item Enters Column Area
 function dragEnter(column) {
   listColumns[column].classList.add('over');
@@ -172,3 +196,4 @@ function drop(e) {
 
 // On Load
 updateDOM();
+ 
